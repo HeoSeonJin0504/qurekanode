@@ -1,4 +1,5 @@
 const User = require('../models/userModel');
+const { generateAccessToken, generateRefreshToken, saveRefreshToken } = require('../utils/tokenUtil');
 
 // 사용자 컨트롤러
 const userController = {
@@ -79,7 +80,7 @@ const userController = {
         success: true,
         message: '회원가입이 완료되었습니다.',
         user: {
-          index: newUser.index,
+          id: newUser.userindex,
           userid: newUser.userid,
           name: newUser.name,
           email: newUser.email
@@ -137,14 +138,60 @@ const userController = {
         });
       }
       
+      console.log('로그인 성공 - 사용자:', user.userid);
+      
+      // 사용자 ID가 제대로 있는지 확인
+      if (user.userindex === undefined || user.userindex === null) {
+        console.error('사용자 ID(userindex)값이 없음');
+        return res.status(500).json({
+          success: false,
+          message: '사용자 ID 정보가 올바르지 않습니다.'
+        });
+      }
+      
+      // 토큰에 담을 사용자 정보
+      const userInfo = {
+        id: user.userindex,
+        userid: user.userid,
+        name: user.name
+      };
+      
+      // 액세스 토큰 및 리프레시 토큰 생성
+      const accessToken = generateAccessToken(userInfo);
+      const refreshToken = generateRefreshToken(userInfo);
+      
+      console.log(`토큰 생성 완료 - 사용자: ${user.userid}`);
+      
+      try {
+        // 리프레시 토큰 저장
+        console.log(`리프레시 토큰 저장 시도 - 사용자 ID: ${user.userindex}`);
+        await saveRefreshToken(user.userindex, refreshToken);
+        console.log('리프레시 토큰 저장 성공');
+      } catch (tokenError) {
+        console.error('리프레시 토큰 저장 실패:', tokenError.message);
+        return res.status(500).json({
+          success: false,
+          message: '로그인은 성공했으나 토큰 저장 중 오류가 발생했습니다.'
+        });
+      }
+      
       // 로그인 성공
       return res.status(200).json({
         success: true,
         message: '로그인 성공',
-        user
+        user: {
+          id: user.userindex,
+          userid: user.userid,
+          name: user.name,
+          email: user.email
+        },
+        tokens: {
+          accessToken,
+          refreshToken
+        }
       });
     } catch (error) {
-      console.error('로그인 오류:', error);
+      console.error('로그인 오류:', error.message);
       return res.status(500).json({
         success: false,
         message: '서버 오류가 발생했습니다.'

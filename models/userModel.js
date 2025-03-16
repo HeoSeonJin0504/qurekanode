@@ -28,7 +28,7 @@ class User {
       
       // 민감한 정보를 제외한 사용자 정보 반환
       return {
-        index: result.insertId,
+        userindex: result.insertId,
         userid: userData.userid,
         name: userData.name,
         email: userData.email
@@ -75,9 +75,24 @@ class User {
       }
       
       // 인증 성공 - 비밀번호를 제외한 사용자 정보 반환
-      const { password: _, ...userInfo } = user;
-      return userInfo;
+      console.log('Authenticated user data:', {
+        userindex: user.userindex,
+        userid: user.userid,
+        name: user.name
+      }); // 디버깅 로그 개선
+      
+      // 명시적으로 필요한 필드만 포함하여 반환
+      return {
+        userindex: user.userindex,
+        userid: user.userid,
+        name: user.name,
+        email: user.email,
+        age: user.age,
+        gender: user.gender,
+        phone: user.phone
+      };
     } catch (error) {
+      console.error('사용자 인증 오류:', error);
       throw error;
     }
   }
