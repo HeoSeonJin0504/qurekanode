@@ -56,6 +56,23 @@ class User {
   }
 
   /**
+   * 사용자 ID로 사용자 조회
+   * @param {number} id - 사용자 ID
+   * @returns {Object|null} 사용자 정보 또는 null
+   */
+  static async findById(id) {
+    try {
+      const [rows] = await pool.execute(
+        'SELECT * FROM users WHERE userindex = ?',
+        [id]
+      );
+      return rows.length > 0 ? rows[0] : null;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
    * 아이디와 비밀번호로 로그인 검증
    * @param {string} userid - 사용자 아이디
    * @param {string} password - 비밀번호

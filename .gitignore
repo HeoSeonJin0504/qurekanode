@@ -48,6 +48,8 @@ coverage
 
 # Mac files
 .DS_Store
+Thumbs.db
 
 # VSCode settings
 .vscode/
+.idea/

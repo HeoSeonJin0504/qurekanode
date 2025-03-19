@@ -43,6 +43,20 @@ async function testConnection() {
       )
     `);
     console.log('리프레시 토큰 테이블 확인 완료');
+    
+    // 요약 정보 테이블이 없으면 생성
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS user_summaries (
+        selection_id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        file_name VARCHAR(255) NOT NULL,
+        summary_type ENUM('기본 요약', '핵심 요약', '주제 요약', '목차 요약', '키워드 요약') NOT NULL,
+        mongo_summary_id VARCHAR(24) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(userindex) ON DELETE CASCADE
+      )
+    `);
+    console.log('요약 정보 테이블 확인 완료');
   } catch (error) {
     console.error('데이터베이스 연결 실패:', error);
     process.exit(1);
