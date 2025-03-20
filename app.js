@@ -26,6 +26,26 @@ app.use('/api/summaries', summaryRoutes); // 요약 라우트 추가
 // 직접 /api/logout 경로 추가 (프론트엔드 요청과 일치하도록)
 app.post('/api/logout', authController.logout);
 
+// 테스트 엔드포인트 (개발 완료 후 제거)
+app.get('/api/test/summaries/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const SummaryModel = require('./models/summaryModel');
+    const summaries = await SummaryModel.findByUserId(userId);
+    
+    return res.status(200).json({
+      success: true,
+      count: summaries.length,
+      summaries
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // 기본 라우트
 app.get('/', (req, res) => {
   res.send('회원가입 및 로그인 API 서버입니다.');

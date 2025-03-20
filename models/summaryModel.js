@@ -69,6 +69,39 @@ class Summary {
       throw error;
     }
   }
+
+  /**
+   * 요약 검색
+   * @param {Object} criteria - 검색 조건
+   * @returns {Array} 검색 결과
+   */
+  static async searchSummaries(criteria) {
+    try {
+      let query = 'SELECT * FROM user_summaries WHERE user_id = ?';
+      let params = [criteria.userId];
+      
+      // 파일명 검색어가 있으면 조건 추가
+      if (criteria.searchQuery) {
+        query += ' AND file_name LIKE ?';
+        params.push(`%${criteria.searchQuery}%`);
+      }
+      
+      // 요약 유형 조건이 있으면 추가
+      if (criteria.summaryType) {
+        query += ' AND summary_type = ?';
+        params.push(criteria.summaryType);
+      }
+      
+      // 정렬 조건 추가
+      query += ' ORDER BY created_at DESC';
+      
+      const [rows] = await pool.execute(query, params);
+      return rows;
+    } catch (error) {
+      console.error('요약 검색 오류:', error.message);
+      throw error;
+    }
+  }
 }
 
 module.exports = Summary;

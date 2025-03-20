@@ -75,7 +75,7 @@ const summaryController = {
   },
   
   /**
-   * 사용자의 모든 요약 목록 조회
+   * 사용자의 모든 요약 목록 조회 (요약 텍스트 포함)
    */
   async getUserSummaries(req, res) {
     try {
@@ -88,12 +88,54 @@ const summaryController = {
         });
       }
       
+      // MySQL에서 요약 정보 목록 조회
       const summaries = await Summary.findByUserId(userId);
+      
+      if (summaries.length === 0) {
+        return res.status(200).json({
+          success: true,
+          count: 0,
+          summaries: []
+        });
+      }
+      
+      // MongoDB에서 각 요약 텍스트 조회하여 결합
+      const summariesWithText = await Promise.all(
+        summaries.map(async (summary) => {
+          try {
+            // MongoDB에서 요약 텍스트 조회
+            const summaryText = await SummaryText.findById(summary.mongo_summary_id);
+            
+            // 날짜 형식 포맷팅 (ISO 형식 유지하되 사용자 친화적인 형식 추가)
+            const createdAt = new Date(summary.created_at);
+            const formattedDate = createdAt.toLocaleDateString('ko-KR', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+            
+            return {
+              ...summary,
+              created_at: summary.created_at, // 원본 ISO 형식 유지
+              formatted_date: formattedDate,  // 사용자 친화적 형식 추가
+              summary_text: summaryText ? summaryText.summary_text : '요약 텍스트를 찾을 수 없습니다.'
+            };
+          } catch (error) {
+            console.error(`요약 ID ${summary.selection_id}의 텍스트 조회 오류:`, error);
+            return {
+              ...summary,
+              summary_text: '요약 텍스트 로딩 중 오류가 발생했습니다.'
+            };
+          }
+        })
+      );
       
       return res.status(200).json({
         success: true,
-        count: summaries.length,
-        summaries
+        count: summariesWithText.length,
+        summaries: summariesWithText
       });
     } catch (error) {
       console.error('요약 목록 조회 오류:', error);
