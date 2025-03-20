@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const summaryController = require('../controllers/summaryController');
+const SummaryText = require('../models/summaryTextModel');
+const Summary = require('../models/summaryModel');
 const { verifyToken } = require('../middlewares/authMiddleware');
 
 // 요약 저장 API
@@ -11,7 +13,6 @@ router.get('/user/:userId', verifyToken, summaryController.getUserSummaries);
 
 // 사용자의 요약 목록 조회 API (요약 텍스트 없이 메타데이터만)
 router.get('/user/:userId/meta', verifyToken, (req, res) => {
-  // 기존 함수 호출 전 파라미터 추가
   req.metadataOnly = true;
   return summaryController.getUserSummaries(req, res);
 });

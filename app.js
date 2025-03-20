@@ -3,7 +3,6 @@ const cors = require('cors');
 const { testConnection } = require('./config/db');
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
-const authController = require('./controllers/authController'); // 추가
 const { connectMongoDB } = require('./config/mongodb');
 const summaryRoutes = require('./routes/summaryRoutes');
 
@@ -21,10 +20,7 @@ connectMongoDB(); // MongoDB 연결 추가
 // 라우트 설정
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/summaries', summaryRoutes); // 요약 라우트 추가
-
-// 직접 /api/logout 경로 추가 (프론트엔드 요청과 일치하도록)
-app.post('/api/logout', authController.logout);
+app.use('/api/summaries', summaryRoutes);
 
 // 테스트 엔드포인트 (개발 완료 후 제거)
 app.get('/api/test/summaries/:userId', async (req, res) => {
