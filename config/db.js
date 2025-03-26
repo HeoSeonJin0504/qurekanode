@@ -57,6 +57,20 @@ async function testConnection() {
       )
     `);
     console.log('요약 정보 테이블 확인 완료');
+    
+    // 문제 정보 테이블이 없으면 생성
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS user_questions (
+        selection_id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        file_name VARCHAR(255) NOT NULL,
+        question_type ENUM('n지 선다형', '순서 배열형', '참/거짓', '빈칸 채우기', '단답형', '서술형') NOT NULL,
+        mongo_question_id VARCHAR(24) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(userindex) ON DELETE CASCADE
+      )
+    `);
+    console.log('문제 정보 테이블 확인 완료');
   } catch (error) {
     console.error('데이터베이스 연결 실패:', error);
     process.exit(1);

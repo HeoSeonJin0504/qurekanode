@@ -5,6 +5,7 @@ const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
 const { connectMongoDB } = require('./config/mongodb');
 const summaryRoutes = require('./routes/summaryRoutes');
+const questionRoutes = require('./routes/questionRoutes'); // 추가
 
 // Express 앱 초기화
 const app = express();
@@ -21,6 +22,7 @@ connectMongoDB(); // MongoDB 연결 추가
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/summaries', summaryRoutes);
+app.use('/api/questions', questionRoutes); // 추가한 문제 라우트 등록
 
 // 테스트 엔드포인트 (개발 완료 후 제거)
 app.get('/api/test/summaries/:userId', async (req, res) => {
