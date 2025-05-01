@@ -79,6 +79,7 @@ const questionController = {
   async getUserQuestions(req, res) {
     try {
       const userId = req.params.userId;
+      const metadataOnly = req.metadataOnly === true;
       
       if (!userId) {
         return res.status(400).json({
@@ -98,7 +99,34 @@ const questionController = {
         });
       }
       
-      // MongoDB에서 각 문제 텍스트 조회하여 결합
+      // 메타데이터만 요청한 경우 MongoDB 조회 없이 반환
+      if (metadataOnly) {
+        // 날짜 형식 포맷팅 추가
+        const questionsWithFormattedDate = questions.map(question => {
+          const createdAt = new Date(question.created_at);
+          const formattedDate = createdAt.toLocaleDateString('ko-KR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          
+          return {
+            ...question,
+            created_at: question.created_at, // 원본 ISO 형식 유지
+            formatted_date: formattedDate,  // 사용자 친화적 형식 추가
+          };
+        });
+        
+        return res.status(200).json({
+          success: true,
+          count: questionsWithFormattedDate.length,
+          questions: questionsWithFormattedDate
+        });
+      }
+      
+      // 전체 데이터 요청 시 MongoDB에서 각 문제 텍스트 조회하여 결합
       const questionsWithText = await Promise.all(
         questions.map(async (question) => {
           try {
@@ -187,6 +215,8 @@ const questionController = {
       });
     }
   }
+  
+  // 불필요한 getAllQuestionsMeta와 getQuestionMetaById 함수 제거
 };
 
 module.exports = questionController;

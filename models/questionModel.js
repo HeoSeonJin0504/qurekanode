@@ -102,6 +102,22 @@ class Question {
       throw error;
     }
   }
+
+  /**
+   * 모든 문제 목록 조회
+   * @returns {Array} 모든 문제 목록
+   */
+  static async findAll() {
+    try {
+      const [rows] = await pool.execute(
+        'SELECT * FROM user_questions ORDER BY created_at DESC'
+      );
+      return rows;
+    } catch (error) {
+      console.error('모든 문제 조회 오류:', error.message);
+      throw error;
+    }
+  }
 }
 
 module.exports = Question;

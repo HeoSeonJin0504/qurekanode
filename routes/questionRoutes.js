@@ -9,6 +9,12 @@ router.post('/', verifyToken, questionController.saveQuestion);
 // 사용자의 문제 목록 조회 API
 router.get('/user/:userId', verifyToken, questionController.getUserQuestions);
 
+// 사용자의 문제 목록 조회 API (메타데이터만)
+router.get('/user/:userId/meta', verifyToken, (req, res) => {
+  req.metadataOnly = true;
+  return questionController.getUserQuestions(req, res);
+});
+
 // 특정 문제 상세 조회 API
 router.get('/:id', verifyToken, questionController.getQuestionDetail);
 

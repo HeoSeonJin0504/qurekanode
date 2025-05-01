@@ -5,7 +5,9 @@ const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
 const { connectMongoDB } = require('./config/mongodb');
 const summaryRoutes = require('./routes/summaryRoutes');
-const questionRoutes = require('./routes/questionRoutes'); // 추가
+const questionRoutes = require('./routes/questionRoutes');
+// 중복 API 제거
+// const problemSummaryMetaRoutes = require('./routes/problemSummaryMeta');
 
 // Express 앱 초기화
 const app = express();
@@ -22,27 +24,9 @@ connectMongoDB(); // MongoDB 연결 추가
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/summaries', summaryRoutes);
-app.use('/api/questions', questionRoutes); // 추가한 문제 라우트 등록
-
-// 테스트 엔드포인트 (개발 완료 후 제거)
-app.get('/api/test/summaries/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const SummaryModel = require('./models/summaryModel');
-    const summaries = await SummaryModel.findByUserId(userId);
-    
-    return res.status(200).json({
-      success: true,
-      count: summaries.length,
-      summaries
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
+app.use('/api/questions', questionRoutes);
+// 중복 API 제거
+// app.use('/api/problem-summary-meta', problemSummaryMetaRoutes);
 
 // 기본 라우트
 app.get('/', (req, res) => {
