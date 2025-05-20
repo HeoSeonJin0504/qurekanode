@@ -1,5 +1,11 @@
 const User = require('../models/userModel');
-const { generateAccessToken, generateRefreshToken, saveRefreshToken } = require('../utils/tokenUtil');
+const { 
+  generateAccessToken, 
+  generateRefreshToken, 
+  saveRefreshToken,
+  setTokenCookies
+} = require('../utils/tokenUtil');
+const logger = require('../utils/logger');
 
 // 사용자 컨트롤러
 const userController = {
@@ -32,7 +38,7 @@ const userController = {
         message: '사용 가능한 아이디입니다.'
       });
     } catch (error) {
-      console.error('아이디 중복 확인 오류:', error);
+      logger.error('아이디 중복 확인 오류:', error);
       return res.status(500).json({
         success: false,
         message: '서버 오류가 발생했습니다.'
@@ -87,7 +93,7 @@ const userController = {
         }
       });
     } catch (error) {
-      console.error('회원가입 오류:', error);
+      logger.error('회원가입 오류:', error);
       
       // 중복 키 오류 처리
       if (error.code === 'ER_DUP_ENTRY') {
@@ -118,7 +124,8 @@ const userController = {
    */
   async login(req, res) {
     try {
-      const { userid, password } = req.body;
+      // userid, password와 함께 rememberMe 옵션을 받음
+      const { userid, password, rememberMe = false } = req.body;
       
       // 필수 입력값 검증
       if (!userid || !password) {
@@ -132,17 +139,18 @@ const userController = {
       const user = await User.authenticate(userid, password);
       
       if (!user) {
+        logger.debug(`로그인 실패 - 사용자: ${userid}`);
         return res.status(401).json({
           success: false,
           message: '아이디 또는 비밀번호가 일치하지 않습니다.'
         });
       }
       
-      console.log('로그인 성공 - 사용자:', user.userid);
+      logger.info(`로그인 성공 - 사용자: ${user.userid}, 자동로그인: ${rememberMe ? '사용' : '미사용'}`);
       
       // 사용자 ID가 제대로 있는지 확인
       if (user.userindex === undefined || user.userindex === null) {
-        console.error('사용자 ID(userindex)값이 없음');
+        logger.error('유효하지 않은 사용자 ID', { userid: user.userid });
         return res.status(500).json({
           success: false,
           message: '사용자 ID 정보가 올바르지 않습니다.'
@@ -153,29 +161,35 @@ const userController = {
       const userInfo = {
         id: user.userindex,
         userid: user.userid,
-        name: user.name
+        name: user.name,
+        rememberMe // 자동 로그인 정보 추가
       };
       
       // 액세스 토큰 및 리프레시 토큰 생성
       const accessToken = generateAccessToken(userInfo);
       const refreshToken = generateRefreshToken(userInfo);
       
-      console.log(`토큰 생성 완료 - 사용자: ${user.userid}`);
-      
       try {
         // 리프레시 토큰 저장
-        console.log(`리프레시 토큰 저장 시도 - 사용자 ID: ${user.userindex}`);
         await saveRefreshToken(user.userindex, refreshToken);
-        console.log('리프레시 토큰 저장 성공');
+        
+        // 토큰을 쿠키와 응답 본문에 모두 전달 (자동 로그인 옵션 포함)
+        setTokenCookies(res, accessToken, refreshToken, rememberMe);
+        
       } catch (tokenError) {
-        console.error('리프레시 토큰 저장 실패:', tokenError.message);
+        logger.error('리프레시 토큰 저장 실패:', tokenError);
         return res.status(500).json({
           success: false,
           message: '로그인은 성공했으나 토큰 저장 중 오류가 발생했습니다.'
         });
       }
       
-      // 로그인 성공
+      // 로그인 성공 응답
+      logger.transaction('사용자 로그인', { 
+        userid: user.userid, 
+        rememberMe: rememberMe 
+      });
+      
       return res.status(200).json({
         success: true,
         message: '로그인 성공',
@@ -188,10 +202,11 @@ const userController = {
         tokens: {
           accessToken,
           refreshToken
-        }
+        },
+        rememberMe // 응답에 자동 로그인 정보 포함
       });
     } catch (error) {
-      console.error('로그인 오류:', error.message);
+      logger.error('로그인 오류:', error);
       return res.status(500).json({
         success: false,
         message: '서버 오류가 발생했습니다.'

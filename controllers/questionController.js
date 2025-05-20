@@ -215,8 +215,7 @@ const questionController = {
       });
     }
   }
-  
-  // 불필요한 getAllQuestionsMeta와 getQuestionMetaById 함수 제거
+
 };
 
 module.exports = questionController;
