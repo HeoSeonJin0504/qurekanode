@@ -12,6 +12,9 @@ class User {
       // 비밀번호 해시화 (보안을 위해)
       const hashedPassword = await bcrypt.hash(userData.password, 10);
       
+      // null 값 처리 - undefined를 null로 변환
+      const email = userData.email === undefined ? null : userData.email;
+      
       // 사용자 정보 데이터베이스에 저장
       const [result] = await pool.execute(
         'INSERT INTO users (userid, password, name, age, gender, phone, email) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -22,7 +25,7 @@ class User {
           userData.age, 
           userData.gender, 
           userData.phone, 
-          userData.email
+          email // undefined 대신 null 사용
         ]
       );
       

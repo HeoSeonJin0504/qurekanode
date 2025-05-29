@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const { verifyToken } = require('../middlewares/authMiddleware');
+const logger = require('../utils/logger'); // logger 모듈 추가
 
 // 토큰 갱신 API
 router.post('/refresh-token', authController.refreshToken);
