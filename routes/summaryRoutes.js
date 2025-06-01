@@ -69,4 +69,7 @@ router.get('/search/:userId', verifyToken, async (req, res) => {
   }
 });
 
+// 요약 삭제 API
+router.delete('/:id', verifyToken, summaryController.deleteSummary);
+
 module.exports = router;

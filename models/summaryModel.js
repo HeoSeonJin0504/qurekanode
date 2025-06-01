@@ -142,6 +142,45 @@ class Summary {
   }
   
   /**
+   * ID로 요약 정보 삭제
+   * @param {number} selectionId - 삭제할 요약 ID
+   * @returns {boolean} 삭제 성공 여부
+   */
+  static async deleteById(selectionId) {
+    try {
+      const [result] = await pool.execute(
+        'DELETE FROM user_summaries WHERE selection_id = ?',
+        [selectionId]
+      );
+      
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error('요약 정보 삭제 오류:', error.message);
+      throw error;
+    }
+  }
+  
+  /**
+   * ID로 요약 정보 조회 (삭제 전 MongoDB ID 확인용)
+   * @param {number} selectionId - 요약 ID
+   * @returns {Object|null} mongo_summary_id를 포함한 요약 정보 또는 null
+   */
+  static async findByIdForDelete(selectionId) {
+    try {
+      const [rows] = await pool.execute(
+        'SELECT selection_id, user_id, mongo_summary_id FROM user_summaries WHERE selection_id = ?',
+        [selectionId]
+      );
+      
+      if (rows.length === 0) return null;
+      return rows[0];
+    } catch (error) {
+      console.error('요약 정보 조회 오류:', error.message);
+      throw error;
+    }
+  }
+
+  /**
    * DB 타입을 클라이언트 타입으로 매핑
    * @private
    * @param {Object} row - DB에서 가져온 행

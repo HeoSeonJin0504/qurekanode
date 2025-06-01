@@ -24,7 +24,7 @@ class Question {
         case '순서 배열형':
           dbQuestionType = 'sequence';
           break;
-        case '참거짓형':
+        case '참/거짓형':
           dbQuestionType = 'true_false';
           break;
         case '빈칸 채우기형':
@@ -157,6 +157,45 @@ class Question {
     }
   }
   
+  /**
+   * ID로 문제 정보 삭제
+   * @param {number} selectionId - 삭제할 문제 ID
+   * @returns {boolean} 삭제 성공 여부
+   */
+  static async deleteById(selectionId) {
+    try {
+      const [result] = await pool.execute(
+        'DELETE FROM user_questions WHERE selection_id = ?',
+        [selectionId]
+      );
+      
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error('문제 정보 삭제 오류:', error.message);
+      throw error;
+    }
+  }
+  
+  /**
+   * ID로 문제 정보 조회 (삭제 전 MongoDB ID 확인용)
+   * @param {number} selectionId - 문제 ID
+   * @returns {Object|null} mongo_question_id를 포함한 문제 정보 또는 null
+   */
+  static async findByIdForDelete(selectionId) {
+    try {
+      const [rows] = await pool.execute(
+        'SELECT selection_id, user_id, mongo_question_id FROM user_questions WHERE selection_id = ?',
+        [selectionId]
+      );
+      
+      if (rows.length === 0) return null;
+      return rows[0];
+    } catch (error) {
+      console.error('문제 정보 조회 오류:', error.message);
+      throw error;
+    }
+  }
+
   /**
    * DB 타입을 클라이언트 타입으로 매핑
    * @private

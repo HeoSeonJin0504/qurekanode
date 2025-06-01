@@ -1,6 +1,7 @@
 const SummaryText = require('../models/summaryTextModel');
 const Summary = require('../models/summaryModel');
 const User = require('../models/userModel');
+const logger = require('../utils/logger'); // logger 모듈 추가
 
 const summaryController = {
   /**
@@ -182,6 +183,60 @@ const summaryController = {
       });
     } catch (error) {
       console.error('요약 상세 조회 오류:', error);
+      return res.status(500).json({
+        success: false,
+        message: '서버 오류가 발생했습니다.'
+      });
+    }
+  },
+  
+  /**
+   * 요약 삭제
+   */
+  async deleteSummary(req, res) {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id; // 인증 미들웨어에서 설정한 사용자 ID
+      
+      // MySQL에서 요약 정보 조회 (MongoDB ID 확인용)
+      const summary = await Summary.findByIdForDelete(id);
+      
+      if (!summary) {
+        return res.status(404).json({
+          success: false,
+          message: '삭제할 요약을 찾을 수 없습니다.'
+        });
+      }
+      
+      // 요청한 사용자가 해당 요약의 소유자인지 확인
+      if (summary.user_id !== userId) {
+        logger.warn(`요약 삭제 권한 없음 - 사용자 ID: ${userId}, 요약 ID: ${id}`);
+        return res.status(403).json({
+          success: false,
+          message: '해당 요약을 삭제할 권한이 없습니다.'
+        });
+      }
+      
+      // 1. MySQL에서 요약 정보 삭제
+      const mysqlDeleted = await Summary.deleteById(id);
+      
+      // 2. MongoDB에서 요약 텍스트 삭제 시도
+      try {
+        await SummaryText.deleteById(summary.mongo_summary_id);
+        logger.debug(`MongoDB 요약 텍스트 삭제 성공 - MongoDB ID: ${summary.mongo_summary_id}`);
+      } catch (mongoError) {
+        // MongoDB 삭제 실패해도 MySQL 삭제는 완료된 상태로 처리
+        logger.error(`MongoDB 요약 텍스트 삭제 실패 - MongoDB ID: ${summary.mongo_summary_id}`, mongoError);
+      }
+      
+      logger.info(`요약 삭제 완료 - 요약 ID: ${id}, 사용자 ID: ${userId}`);
+      return res.status(200).json({
+        success: true,
+        message: '요약이 성공적으로 삭제되었습니다.',
+        deletedSummaryId: id
+      });
+    } catch (error) {
+      logger.error('요약 삭제 오류:', error);
       return res.status(500).json({
         success: false,
         message: '서버 오류가 발생했습니다.'

@@ -1,6 +1,7 @@
 const QuestionText = require('../models/questionTextModel');
 const Question = require('../models/questionModel');
 const User = require('../models/userModel');
+const logger = require('../utils/logger'); // logger 모듈 추가
 
 const questionController = {
   /**
@@ -214,8 +215,61 @@ const questionController = {
         message: '서버 오류가 발생했습니다.'
       });
     }
-  }
+  },
 
+  /**
+   * 문제 삭제
+   */
+  async deleteQuestion(req, res) {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id; // 인증 미들웨어에서 설정한 사용자 ID
+      
+      // MySQL에서 문제 정보 조회 (MongoDB ID 확인용)
+      const question = await Question.findByIdForDelete(id);
+      
+      if (!question) {
+        return res.status(404).json({
+          success: false,
+          message: '삭제할 문제를 찾을 수 없습니다.'
+        });
+      }
+      
+      // 요청한 사용자가 해당 문제의 소유자인지 확인
+      if (question.user_id !== userId) {
+        logger.warn(`문제 삭제 권한 없음 - 사용자 ID: ${userId}, 문제 ID: ${id}`);
+        return res.status(403).json({
+          success: false,
+          message: '해당 문제를 삭제할 권한이 없습니다.'
+        });
+      }
+      
+      // 1. MySQL에서 문제 정보 삭제
+      const mysqlDeleted = await Question.deleteById(id);
+      
+      // 2. MongoDB에서 문제 텍스트 삭제 시도
+      try {
+        await QuestionText.deleteById(question.mongo_question_id);
+        logger.debug(`MongoDB 문제 텍스트 삭제 성공 - MongoDB ID: ${question.mongo_question_id}`);
+      } catch (mongoError) {
+        // MongoDB 삭제 실패해도 MySQL 삭제는 완료된 상태로 처리
+        logger.error(`MongoDB 문제 텍스트 삭제 실패 - MongoDB ID: ${question.mongo_question_id}`, mongoError);
+      }
+      
+      logger.info(`문제 삭제 완료 - 문제 ID: ${id}, 사용자 ID: ${userId}`);
+      return res.status(200).json({
+        success: true,
+        message: '문제가 성공적으로 삭제되었습니다.',
+        deletedQuestionId: id
+      });
+    } catch (error) {
+      logger.error('문제 삭제 오류:', error);
+      return res.status(500).json({
+        success: false,
+        message: '서버 오류가 발생했습니다.'
+      });
+    }
+  }
 };
 
 module.exports = questionController;

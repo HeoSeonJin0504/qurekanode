@@ -69,4 +69,7 @@ router.get('/search/:userId', verifyToken, async (req, res) => {
   }
 });
 
+// 문제 삭제 API
+router.delete('/:id', verifyToken, questionController.deleteQuestion);
+
 module.exports = router;
